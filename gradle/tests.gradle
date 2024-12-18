@@ -1,0 +1,25 @@
+apply plugin: 'jacoco'
+
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        events "skipped", "failed"
+    }
+
+    reports {
+        html.required = true
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+        csv.required = true
+        html.outputLocation = file("${buildDir}/jacocoHtml")
+    }
+}
