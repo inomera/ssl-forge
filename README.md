@@ -4,7 +4,7 @@
 
 | Artifact          | Version                                                                                                                                                                                  |
 |-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| lock-provider-api | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.inomera.telco/ssl-forge/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.inomera.telco/ssl-forge) |
+| ssl-forge | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.inomera.telco/ssl-forge/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.inomera.telco/ssl-forge) |
 
 ---
 
