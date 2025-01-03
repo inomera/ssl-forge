@@ -1,27 +1,48 @@
 apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
-def repoUser = project.findProperty('telcoTeamUsername')
-    ?: System.getenv('telcoTeamUsername')
-    ?: 'Not Specified'
+def isSnapshot = false
 
-def repoPass = project.findProperty('telcoTeamPassword')
-    ?: System.getenv('telcoTeamPassword')
-    ?: 'Not Specified'
+def mavenSnapshotUrl = project.findProperty('mavenSnapshotUrl') ?: 'https://oss.sonatype.org/content/repositories/snapshots/'
+def mavenReleaseUrl = project.findProperty('mavenReleaseUrl') ?: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+def mavenUsername = project.findProperty('mavenUsername') ?: 'Undefined'
+def mavenPassword = project.findProperty('mavenPassword') ?: 'Undefined'
+
+// Signing
+signing {
+    useInMemoryPgpKeys(file('/Users/fatihbozik/Documents/LockSecret.asc').text, "inomera")
+    sign configurations.archives
+}
+
+signArchives.onlyIf { gradle.taskGraph.hasTask(publish) && !isSnapshot }
 
 publishing {
     repositories {
         maven {
-            allowInsecureProtocol = true
-            url "http://nexus.telco.inomera.com/repository/maven-releases/"
+            url isSnapshot ? "${mavenSnapshotUrl}" : "${mavenReleaseUrl}"
+            println("Publishing to ${url}")
             credentials {
-                username repoUser as String
-                password repoPass as String
+                username "${mavenUsername}"
+                println("username -> ${mavenUsername}")
+                password "${mavenPassword}"
+                println("password -> ${mavenPassword}")
             }
         }
     }
 }
 
-tasks.register('sourceJar', Jar) {
-    classifier 'sources'
-    from sourceSets.main.allJava
+model {
+    tasks.generatePomFileForMavenJavaPublication {
+        destination = file("$buildDir/generated-pom.xml")
+    }
+    tasks.publishMavenJavaPublicationToMavenLocal {
+        dependsOn project.tasks.signArchives
+    }
+    tasks.publishMavenJavaPublicationToMavenRepository {
+        dependsOn project.tasks.signArchives
+    }
+}
+
+tasks.withType(GenerateModuleMetadata).configureEach {
+    enabled = false
 }

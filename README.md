@@ -1,5 +1,13 @@
 # SSL Forge
 
+![Build](https://github.com/inomera/ssl-forge/workflows/Build/badge.svg)
+
+| Artifact          | Version                                                                                                                                                                                  |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| lock-provider-api | [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.inomera.telco/ssl-forge/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.inomera.telco/ssl-forge) |
+
+---
+
 `ssl-forge` is a Java library designed to enhance SSL/TLS configurations by providing advanced mechanisms for managing
 and validating X509 certificates. It allows you to define custom trust management strategies and supports multiple
 `TrustManager` implementations through a composite pattern.

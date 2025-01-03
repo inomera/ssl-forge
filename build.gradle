@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'signing'
 }
 
 apply from: "${rootProject.rootDir}/gradle/tests.gradle"
@@ -31,15 +32,131 @@ test {
     useJUnitPlatform()
 }
 
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
+    classifier "javadoc"
+    from javadoc.destinationDir
+}
+
+tasks.register('sourceJar', Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+compileJava.dependsOn(processResources)
+
+artifacts {
+    archives sourceJar
+    archives javadocJar
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = "${project.group}"
-            artifactId = "${project.name}"
-            version = "${project.version}"
-
             from components.java
-            artifact tasks.sourceJar
+            groupId = "${project.group}".toString()
+            println("groupId -> ${groupId}")
+            artifactId = "${project.name}".toString()
+            println("artifactId -> ${artifactId}")
+            version = "${project.version}".toString()
+            println("version -> ${version}")
+            pom {
+                name = 'ssl-forge'
+                description = 'SSL Forge'
+                url = 'https://github.com/inomera/ssl-forge'
+                organization {
+                    name = 'Inomera Research'
+                    url = 'https://inomera.com/'
+                }
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'FatihBozik'
+                        name = 'Fatih Bozik'
+                        organization = 'Inomera'
+                        organizationUrl = 'https://inomera.com/'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/inomera/ssl-forge'
+                    connection = 'scm:git:https://github.com/inomera/ssl-forge.git'
+                    developerConnection = 'scm:git:https://github.com/inomera/ssl-forge.git'
+                }
+                issueManagement {
+                    system = 'GitHub'
+                    url = 'https://github.com/inomera/ssl-forge/issues'
+                }
+            }
+            // create the sign pom artifact
+            pom.withXml {
+                def root = asNode()
+                // Print all dependencies before filtering
+                println("Dependencies before filtering:")
+                root.dependencies.dependency.each { dep ->
+                    def groupId = dep.groupId.text()?.toString()
+                    def artifactId = dep.artifactId.text()?.toString()
+                    def version = dep.version.text()?.toString()
+                    def scope = dep.scope.text()?.toString()
+                    println("GroupId: ${groupId}, ArtifactId: ${artifactId}, Version: ${version}, Scope: ${scope}")
+                }
+                // Eliminate test-scoped dependencies
+                root.dependencies.dependency.findAll { dep ->
+                    dep.scope.text()?.toString() == "test"
+                }.each { dep ->
+                    def groupId = dep.groupId.text()?.toString()
+                    def artifactId = dep.artifactId.text()?.toString()
+                    println("Removing dependency: GroupId=${groupId}, ArtifactId=${artifactId}")
+                    dep.parent().remove(dep)
+                }
+                // Print remaining dependencies after filtering
+                println("Dependencies after filtering:")
+                root.dependencies.dependency.each { dep ->
+                    def groupId = dep.groupId.text()?.toString()
+                    def artifactId = dep.artifactId.text()?.toString()
+                    def version = dep.version.text()?.toString()
+                    def scope = dep.scope.text()?.toString()
+                    println("GroupId: ${groupId}, ArtifactId: ${artifactId}, Version: ${version}, Scope: ${scope}")
+                }
+                println("root -> $root")
+                def pomFile = file("${project.buildDir}/generated-pom.xml")
+                writeTo(pomFile)
+                println("pomFile -> $pomFile")
+                def pomAscFile = signing.sign(pomFile).signatureFiles[0]
+                println("pomAscFile -> $pomAscFile")
+                artifact(pomAscFile) {
+                    classifier = null
+                    extension = 'pom.asc'
+                }
+            }
+            artifact(sourceJar) {
+                classifier = 'sources'
+            }
+            artifact(javadocJar) {
+                classifier = 'javadoc'
+            }
+            // create the signed artifacts
+            def archives = project.tasks.signArchives
+            println("archives -> $archives")
+            def files = archives.signatureFiles
+            println("signatureFiles -> $files")
+            files.each {
+                artifact(it) {
+                    def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+                    println("it.file -> $it.file")
+                    if (matcher.find()) {
+                        classifier = matcher.group(1)
+                        println("classifier -> $classifier")
+                    } else {
+                        classifier = null
+                    }
+                    extension = 'jar.asc'
+                }
+            }
         }
     }
 }
