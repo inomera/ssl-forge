@@ -10,7 +10,7 @@ def mavenPassword = project.findProperty('mavenPassword') ?: 'Undefined'
 
 // Signing
 signing {
-    useInMemoryPgpKeys(file('/Users/fatihbozik/Documents/LockSecret.asc').text, "inomera")
+    useInMemoryPgpKeys(file('secret.asc').text, "****")
     sign configurations.archives
 }
 
